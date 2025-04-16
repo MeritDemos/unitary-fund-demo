@@ -85,6 +85,11 @@ pub fn select_provider(providers: &[Box<dyn Provider>]) -> Result<usize, Box<dyn
         return Err(Box::new(ProviderError::NoProvidersAvailable));
     }
 
+    // If there's only one provider, automatically select it
+    if providers.len() == 1 {
+        return Ok(0);
+    }
+
     let provider_names: Vec<String> = providers
         .iter()
         .map(|p| p.name().to_string())
