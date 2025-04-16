@@ -1,4 +1,4 @@
-use std::{error::Error, fs};
+use std::{error::Error, fs, process::Command};
 use git2::{Repository, StatusOptions};
 
 pub fn get_diff(repo: &Repository) -> Result<String, Box<dyn Error>> {
@@ -82,26 +82,19 @@ pub fn stage_and_commit(repo: &Repository, message: &str) -> Result<(), Box<dyn 
     let mut index = repo.index()?;
     index.add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)?;
     index.write()?;
-    create_commit(repo, message)?;
-    Ok(())
-}
-
-fn create_commit(repo: &Repository, message: &str) -> Result<(), Box<dyn Error>> {
-    let mut index = repo.index()?;
-    let oid = index.write_tree()?;
-    let tree = repo.find_tree(oid)?;
     
-    let signature = repo.signature()?;
-    let parent_commit = repo.head()?.peel_to_commit()?;
-    
-    repo.commit(
-        Some("HEAD"),
-        &signature,
-        &signature,
-        message,
-        &tree,
-        &[&parent_commit],
-    )?;
+    // Use git command directly instead of git2
+    // Uses local signing config instead of recreating logic
+    let output = Command::new("git")
+        .args(["commit", "-S", "-m", message])
+        .output()?;
+        
+    if !output.status.success() {
+        return Err(format!(
+            "Failed to create commit: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ).into());
+    }
     
     Ok(())
 }
