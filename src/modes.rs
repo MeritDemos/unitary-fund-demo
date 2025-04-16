@@ -15,9 +15,9 @@ pub enum Mode {
 impl Mode {
     pub fn description(&self) -> &'static str {
         match self {
-            Mode::CommitMessage => "Generate commit message",
-            Mode::FileAnalysis => "Analyze file changes",
-            Mode::ContributorAnalysis => "Analyze contributors",
+            Mode::CommitMessage => "📝 Generate commit message",
+            Mode::FileAnalysis => "🔍 Analyze file changes", 
+            Mode::ContributorAnalysis => "👥 Analyze contributors",
         }
     }
 
@@ -47,13 +47,13 @@ async fn handle_commit_message(config: &Config, repo: &Repository) -> Result<(),
             0 => continue, // Regenerate
             1 => {
                 let types = [
-                    "feat: New feature",
-                    "fix: Bug fix",
-                    "docs: Documentation",
-                    "style: Formatting",
-                    "refactor: Code restructure",
-                    "test: Testing",
-                    "chore: Maintenance",
+                    "feat: ✨ New feature",
+                    "fix: 🐛 Bug fix", 
+                    "docs: 📚 Documentation",
+                    "style: 💅 Formatting",
+                    "refactor: ♻️ Code restructure",
+                    "test: 🧪 Testing",
+                    "chore: 🔧 Maintenance",
                 ];
                 
                 let type_idx = ui::show_selection_menu("Select commit type", &types, 0)?;
@@ -65,7 +65,11 @@ async fn handle_commit_message(config: &Config, repo: &Repository) -> Result<(),
                 println!("══════════════════════");
                 println!("{}\n", new_message);
 
-                let confirm_options = ["✅ Confirm and commit", "🔄 Start over", "❌ Cancel"];
+                let confirm_options = [
+                    "✅ Confirm and commit", 
+                    "🔄 Start over", 
+                    "❌ Cancel"
+                ];
                 match ui::show_selection_menu("Would you like to proceed with this commit message?", &confirm_options, 0)? {
                     0 => {
                         git::stage_and_commit(repo, &new_message)?;
@@ -129,7 +133,7 @@ async fn handle_contributor_analysis(config: &Config, repo: &Repository) -> Resu
         let stats = format_contributor_stats(contributor, repo)?;
         let summary = config.analyze_contributor(&stats).await?;
         spinner.finish_and_clear();
-
+        
         println!("\n🤖 AI Analysis");
         println!("═════════════");
         println!("{}\n", summary);
