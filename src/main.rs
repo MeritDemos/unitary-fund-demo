@@ -3,6 +3,7 @@ use std::error::Error;
 pub mod providers;
 pub mod ui;
 pub mod modes;
+pub mod git;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -23,6 +24,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mode = ui::select_mode().await?;
 
     println!("Selected mode: {}", mode.description());
+
+    let repo = git2::Repository::open(".")?;
+
+    let diff = git::get_diff(&repo)?;
+
+    println!("Diff: {}", diff);
 
     Ok(())
 }
