@@ -31,81 +31,107 @@ impl Mode {
 }
 
 async fn handle_commit_message(config: &Config, repo: &Repository) -> Result<(), Box<dyn Error>> {
-    let diff = git::get_diff(repo)?;
-    
-    loop {
-        let commit_message = generate_with_spinner(config, &diff).await?;
-        
-        let options = [
-            "✨ Regenerate message",
-            "📝 Edit commit type",
-            "✅ Stage and commit",
-            "❌ Cancel"
-        ];
-        
-        match ui::show_selection_menu("What would you like to do?", &options, 2)? {
-            0 => continue, // Regenerate
-            1 => {
-                let types = [
-                    "feat: ✨ New feature",
-                    "fix: 🐛 Bug fix", 
-                    "docs: 📚 Documentation",
-                    "style: 💅 Formatting",
-                    "refactor: ♻️ Code restructure",
-                    "test: 🧪 Testing",
-                    "chore: 🔧 Maintenance",
-                ];
+    match git::get_diff(repo) {
+        Ok(diff) => {
+            loop {
+                let commit_message = generate_with_spinner(config, &diff).await?;
                 
-                let type_idx = ui::show_selection_menu("Select commit type", &types, 0)?;
-                let selected_type = types[type_idx].split(':').next().unwrap();
-                let description = commit_message.split(':').nth(1).unwrap_or(&commit_message).trim();
-                let new_message = format!("{}: {}", selected_type, description);
-                
-                println!("\n📝 New Commit Message");
-                println!("══════════════════════");
-                println!("{}\n", new_message);
-
-                let confirm_options = [
-                    "✅ Confirm and commit", 
-                    "🔄 Start over", 
+                let options = [
+                    "✨ Regenerate message",
+                    "📝 Edit commit type",
+                    "✅ Stage and commit",
                     "❌ Cancel"
                 ];
-                match ui::show_selection_menu("Would you like to proceed with this commit message?", &confirm_options, 0)? {
-                    0 => {
-                        git::stage_and_commit(repo, &new_message)?;
+                
+                match ui::show_selection_menu("What would you like to do?", &options, 2)? {
+                    0 => continue, // Regenerate
+                    1 => {
+                        let types = [
+                            "feat: ✨ New feature",
+                            "fix: 🐛 Bug fix", 
+                            "docs: 📚 Documentation",
+                            "style: 💅 Formatting",
+                            "refactor: ♻️ Code restructure",
+                            "test: 🧪 Testing",
+                            "chore: 🔧 Maintenance",
+                        ];
+                        
+                        let type_idx = ui::show_selection_menu("Select commit type", &types, 0)?;
+                        let selected_type = types[type_idx].split(':').next().unwrap();
+                        let description = commit_message.split(':').nth(1).unwrap_or(&commit_message).trim();
+                        let new_message = format!("{}: {}", selected_type, description);
+                        
+                        println!("\n📝 New Commit Message");
+                        println!("══════════════════════");
+                        println!("{}\n", new_message);
+
+                        let confirm_options = [
+                            "✅ Confirm and commit", 
+                            "🔄 Start over", 
+                            "❌ Cancel"
+                        ];
+                        match ui::show_selection_menu("Would you like to proceed with this commit message?", &confirm_options, 0)? {
+                            0 => {
+                                git::stage_and_commit(repo, &new_message)?;
+                                println!("Changes committed successfully!");
+                                break;
+                            }
+                            1 => continue,
+                            _ => break,
+                        }
+                    }
+                    2 => {
+                        git::stage_and_commit(repo, &commit_message)?;
                         println!("Changes committed successfully!");
                         break;
                     }
-                    1 => continue,
                     _ => break,
                 }
             }
-            2 => {
-                git::stage_and_commit(repo, &commit_message)?;
-                println!("Changes committed successfully!");
-                break;
+            Ok(())
+        }
+        Err(e) => {
+            if e.to_string() == "No changes to commit" {
+                println!("\n📝 Repository Status");
+                println!("══════════════════");
+                println!("No changes to commit. Your working directory is clean.\n");
+                Ok(())
+            } else {
+                Err(e)
             }
-            _ => break,
         }
     }
-    Ok(())
 }
 
 async fn handle_file_analysis(config: &Config, repo: &Repository) -> Result<(), Box<dyn Error>> {
     let spinner = ui::create_spinner("Analyzing changes")?;
-    let analyses = config.analyze_changes(repo).await?;
+    let result = config.analyze_changes(repo).await;
     spinner.finish_and_clear();
     
-    println!("\n📊 File Analysis Results");
-    println!("══════════════════════\n");
-    
-    for analysis in analyses {
-        println!("📁 {}", analysis.path);
-        println!("───────────────────");
-        println!("{}\n", analysis.explanation);
+    match result {
+        Ok(analyses) => {
+            println!("\n📊 File Analysis Results");
+            println!("══════════════════════\n");
+            
+            for analysis in analyses {
+                println!("📁 {}", analysis.path);
+                println!("───────────────────");
+                println!("{}\n", analysis.explanation);
+            }
+            
+            Ok(())
+        }
+        Err(e) => {
+            if e.to_string() == "No changes to commit" {
+                println!("\n📊 Repository Status");
+                println!("══════════════════");
+                println!("No changes to analyze. Your working directory is clean.\n");
+                Ok(())
+            } else {
+                Err(e)
+            }
+        }
     }
-    
-    Ok(())
 }
 
 async fn handle_contributor_analysis(config: &Config, repo: &Repository) -> Result<(), Box<dyn Error>> {
