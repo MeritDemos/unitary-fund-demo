@@ -58,7 +58,7 @@ const SYSTEM_MESSAGE: &str = r#"You are an expert software developer tasked with
    - The entire message should be 50 chars or less
    - Focus on the "why" and "what" rather than the "how"
 
-Please provide only the commit message without any additional commentary."#;
+Please provide only the commit message without any additional commentary or markdown formatting."#;
 
 const FILE_ANALYSIS_PROMPT: &str = r#"You are an expert software developer tasked with analyzing changes to a file. Given a git diff or file content, you will:
 
@@ -69,8 +69,9 @@ const FILE_ANALYSIS_PROMPT: &str = r#"You are an expert software developer taske
    - Notable implementation details or design decisions
    - Any potential concerns or suggestions for improvement
 
+Format your response in markdown with appropriate headers, lists, and code blocks where relevant.
+Do not include ``` tags in your response unless you are explicitly using them to format code. Do not include ```markdown!
 Try to be as concise as possible while still providing meaningful insights.
-
 Please focus on providing meaningful insights rather than just describing the changes line by line."#;
 
 const CONTRIBUTOR_ANALYSIS_PROMPT: &str = r#"You are an expert software developer tasked with analyzing a contributor's work in a repository. Given information about their commits, files changed, and overall impact, you will:
@@ -87,4 +88,5 @@ const CONTRIBUTOR_ANALYSIS_PROMPT: &str = r#"You are an expert software develope
    - Their apparent role in the project
    - Any notable patterns or specialties in their work
 
+Format your response in markdown with appropriate headers, lists, and emphasis where relevant.
 Please provide a clear, professional summary that helps understand the contributor's role and impact on the project."#; 

@@ -61,8 +61,7 @@ async fn handle_commit_message(config: &Config, repo: &Repository) -> Result<(),
                         let description = commit_message.split(':').nth(1).unwrap_or(&commit_message).trim();
                         let new_message = format!("{}: {}", selected_type, description);
                         
-                        println!("\n📝 New Commit Message");
-                        println!("══════════════════════");
+                        ui::print_section("📝 New Commit Message");
                         println!("{}\n", new_message);
 
                         let confirm_options = [
@@ -92,8 +91,7 @@ async fn handle_commit_message(config: &Config, repo: &Repository) -> Result<(),
         }
         Err(e) => {
             if e.to_string() == "No changes to commit" {
-                println!("\n📝 Repository Status");
-                println!("══════════════════");
+                ui::print_section("📝 Repository Status");
                 println!("No changes to commit. Your working directory is clean.\n");
                 Ok(())
             } else {
@@ -110,21 +108,18 @@ async fn handle_file_analysis(config: &Config, repo: &Repository) -> Result<(), 
     
     match result {
         Ok(analyses) => {
-            println!("\n📊 File Analysis Results");
-            println!("══════════════════════\n");
+            ui::print_section("📊 File Analysis Results");
             
             for analysis in analyses {
-                println!("📁 {}", analysis.path);
-                println!("───────────────────");
-                println!("{}\n", analysis.explanation);
+                let markdown = format!("## 📁 {}\n{}", analysis.path, analysis.explanation);
+                ui::print_markdown(&markdown);
             }
             
             Ok(())
         }
         Err(e) => {
             if e.to_string() == "No changes to commit" {
-                println!("\n📊 Repository Status");
-                println!("══════════════════");
+                ui::print_section("📊 Repository Status");
                 println!("No changes to analyze. Your working directory is clean.\n");
                 Ok(())
             } else {
@@ -137,8 +132,7 @@ async fn handle_file_analysis(config: &Config, repo: &Repository) -> Result<(), 
 async fn handle_contributor_analysis(config: &Config, repo: &Repository) -> Result<(), Box<dyn Error>> {
     let contributors = git::get_contributors(repo)?;
     
-    println!("\n👥 Repository Contributors");
-    println!("═════════════════════════\n");
+    ui::print_section("👥 Repository Contributors");
     
     let mut contributor_items: Vec<String> = contributors.iter().map(|c| {
         format!("{} <{}> ({} commits)", c.name, c.email, c.commit_count)
@@ -155,14 +149,13 @@ async fn handle_contributor_analysis(config: &Config, repo: &Repository) -> Resu
         let contributor = &contributors[selection];
         display_contributor_info(contributor);
         
-        let spinner = ui::create_spinner("Analyzing contributor's work")?;
         let stats = format_contributor_stats(contributor, repo)?;
+        let spinner = ui::create_spinner("Analyzing contributor's work")?;
         let summary = config.analyze_contributor(&stats).await?;
         spinner.finish_and_clear();
         
-        println!("\n🤖 AI Analysis");
-        println!("═════════════");
-        println!("{}\n", summary);
+        ui::print_section("🤖 AI Analysis");
+        ui::print_markdown(&summary);
 
         println!("\nPress Enter to continue...");
         std::io::stdin().read_line(&mut String::new())?;
@@ -177,41 +170,35 @@ async fn generate_with_spinner(config: &Config, diff: &str) -> Result<String, Bo
     let commit_message = config.generate_commit_message(diff).await?;
     spinner.finish_and_clear();
 
-    println!("\n📝 Generated Commit Message");
-    println!("══════════════════════════");
+    ui::print_section("📝 Generated Commit Message");
     println!("{}\n", commit_message);
     
     Ok(commit_message)
 }
 
 fn display_contributor_info(contributor: &git::ContributorStats) {
-    println!("\n👤 Contributor Details: {}", contributor.name);
-    println!("══════════════════════════════");
+    ui::print_section(&format!("👤 Contributor Details: {}", contributor.name));
     println!("📧 Email: {}", contributor.email);
     
-    println!("\n📊 Statistics");
-    println!("───────────");
+    ui::print_subsection("📊 Statistics");
     println!("  • Commits: {}", contributor.commit_count);
     println!("  • Lines added: {}", contributor.additions);
     println!("  • Lines deleted: {}", contributor.deletions);
     println!("  • Files changed: {}", contributor.files_changed.len());
 
-    println!("\n📁 Most Modified Files");
-    println!("──────────────────");
+    ui::print_subsection("📁 Most Modified Files");
     for (file, count) in &contributor.most_modified_files {
         println!("  • {} ({} modifications)", file, count);
     }
 
-    println!("\n🔧 File Types");
-    println!("────────────");
+    ui::print_subsection("🔧 File Types");
     let mut file_types: Vec<_> = contributor.file_types.iter().collect();
     file_types.sort_by(|a, b| b.1.cmp(a.1));
     for (ext, count) in file_types {
         println!("  • {}: {} files", ext, count);
     }
 
-    println!("\n📈 Largest Contributions");
-    println!("─────────────────────");
+    ui::print_subsection("📈 Largest Contributions");
     for (additions, deletions, message) in &contributor.largest_commits {
         println!("  • +{} -{} : {}", additions, deletions, message);
     }
@@ -227,34 +214,33 @@ fn format_contributor_stats(
         &contributor.email
     )?;
 
-    println!("\n🔄 Recent Commits");
-    println!("───────────────");
+    ui::print_subsection("🔄 Recent Commits");
     for commit in commits.iter().take(5) {
         println!("• {}", commit);
     }
 
     Ok(format!(
-        "Contributor: {} <{}>
+        "## Contributor: {} <{}>
 
-Statistics:
+### Statistics
 - Total commits: {}
 - Lines added: {}
 - Lines deleted: {}
 - Files modified: {}
 
-Most frequently modified files:
+### Most frequently modified files
 {}
 
-File type distribution:
+### File type distribution
 {}
 
-Largest contributions:
+### Largest contributions
 {}
 
-Recent commits:
+### Recent commits
 {}
 
-Modified files:
+### Modified files
 {}",
         contributor.name,
         contributor.email,

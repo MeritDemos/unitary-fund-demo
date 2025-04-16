@@ -1,8 +1,38 @@
 use std::error::Error;
 use dialoguer::{theme::ColorfulTheme, Select, Input};
 use indicatif::{ProgressBar, ProgressStyle};
+use termimad::{MadSkin, gray, StyledChar};
 
 use crate::modes::Mode;
+
+/// Renders markdown text in the terminal with proper styling
+pub fn print_markdown(text: &str) {
+    let mut skin = MadSkin::default();
+    // Configure markdown styling
+    skin.set_headers_fg(gray(255));  // Bright white for headers
+    skin.bold.set_fg(gray(200));     // Light gray for bold
+    skin.italic.set_fg(gray(180));   // Slightly darker for italic
+    skin.bullet = StyledChar::from_fg_char(gray(180), '•');
+    skin.quote_mark = StyledChar::from_fg_char(gray(180), '▐');
+    skin.code_block.set_fg(gray(71)); // Light green for code blocks
+    
+    // Add a newline before and after for better spacing
+    println!();
+    skin.print_text(text);
+    println!();
+}
+
+/// Prints a section header with a title
+pub fn print_section(title: &str) {
+    println!("\n{}", title);
+    println!("{}\n", "═".repeat(title.chars().count()));
+}
+
+/// Prints a subsection header with a title
+pub fn print_subsection(title: &str) {
+    println!("\n{}", title);
+    println!("{}", "─".repeat(title.chars().count()));
+}
 
 pub fn create_spinner(message: &str) -> Result<ProgressBar, Box<dyn Error>> {
     let spinner = ProgressBar::new_spinner();
