@@ -1,5 +1,5 @@
 use std::error::Error;
-use dialoguer::{theme::ColorfulTheme, Select};
+use dialoguer::{theme::ColorfulTheme, Select, Input};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::modes::Mode;
@@ -38,4 +38,13 @@ pub async fn select_mode() -> Result<Mode, Box<dyn Error>> {
         1 => Mode::FileAnalysis,
         _ => Mode::ContributorAnalysis,
     })
+}
+
+pub fn get_repository_path(default: &str) -> Result<String, Box<dyn Error>> {
+    let path: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Enter repository path")
+        .default(default.into())
+        .allow_empty(true)
+        .interact()?;
+    Ok(if path.is_empty() { ".".to_string() } else { path })
 }
