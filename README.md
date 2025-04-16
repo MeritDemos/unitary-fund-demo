@@ -48,7 +48,7 @@ The application will automatically detect available providers based on the API k
 
 ## Usage
 
-Run the tool from your termina:
+Run the tool from your terminal:
 
 ```bash
 cargo run
